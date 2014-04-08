@@ -1,0 +1,593 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="lib/rfc2629.xslt"?>
+<?rfc toc="yes" ?>
+<?rfc symrefs="yes" ?>
+<?rfc sortrefs="yes" ?>
+<?rfc compact="yes"?>
+<?rfc subcompact="no" ?>
+<?rfc linkmailto="no" ?>
+<?rfc editing="no" ?>
+<?rfc comments="yes" ?>
+<?rfc inline="yes"?>
+<?rfc rfcedstyle="yes"?>
+<?rfc-ext allow-markup-in-artwork="yes" ?>
+<?rfc-ext include-index="no" ?>
+
+<!DOCTYPE rfc [
+  <!ENTITY MAY "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>MAY</bcp14>">
+  <!ENTITY MUST "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>MUST</bcp14>">
+  <!ENTITY MUST-NOT "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>MUST NOT</bcp14>">
+  <!ENTITY OPTIONAL "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>OPTIONAL</bcp14>">
+  <!ENTITY RECOMMENDED "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>RECOMMENDED</bcp14>">
+  <!ENTITY REQUIRED "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>REQUIRED</bcp14>">
+  <!ENTITY SHALL "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>SHALL</bcp14>">
+  <!ENTITY SHALL-NOT "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>SHALL NOT</bcp14>">
+  <!ENTITY SHOULD "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>SHOULD</bcp14>">
+  <!ENTITY SHOULD-NOT "<bcp14 xmlns='http://purl.org/net/xml2rfc/ext'>SHOULD NOT</bcp14>">
+  <!ENTITY mdash "&#8212;">
+  <!ENTITY rfc793 SYSTEM
+"http://xml.resource.org/public/rfc/bibxml/reference.RFC.0793.xml">
+  <!ENTITY rfc6824 SYSTEM
+  "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6824.xml">
+  <!ENTITY rfc1122 SYSTEM
+  "http://xml.resource.org/public/rfc/bibxml/reference.RFC.1122.xml">
+  <!ENTITY rfc3360 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3360.xml">
+]>
+
+<rfc
+    category="info"
+    ipr="noModification3978"
+    docName="draft-bonaventure-mptcp-reset" >
+    <!-- Processing Instructions- PIs (for a complete list and description,
+          see file http://xml.resource.org/authoring/README.html and below... -->
+
+    <!-- Some of the more generally applicable PIs that most I-Ds might want to use -->
+    
+    <!-- Try to enforce the ID-nits conventions and DTD validity -->
+    <?rfc strict="yes" ?>
+
+    <!-- Items used when reviewing the document -->
+    <?rfc comments="no" ?>  <!-- Controls display of <cref> elements -->
+    <?rfc inline="no" ?>    <!-- When no, put comments at end in comments section,
+                                 otherwise, put inline -->
+    <?rfc editing="no" ?>   <!-- When yes, insert editing marks: editing marks consist of a 
+                                 string such as <29> printed in the blank line at the 
+                                 beginning of each paragraph of text. -->
+
+    <!-- Create Table of Contents (ToC) and set some options for it.  
+         Note the ToC may be omitted for very short documents,but idnits insists on a ToC 
+         if the document has more than 15 pages. --> 
+   <?rfc toc="yes"?>
+   <?rfc tocompact="yes"?> <!-- If "yes" eliminates blank lines before main section entries. -->
+   <?rfc tocdepth="3"?>    <!-- Sets the number of levels of sections/subsections... in ToC --> 
+
+    <!-- Choose the options for the references. 
+         Some like symbolic tags in the references (and citations) and others prefer 
+         numbers. The RFC Editor always uses symbolic tags.
+         The tags used are the anchor attributes of the references. --> 
+    <?rfc symrefs="no"?>
+    <?rfc sortrefs="yes" ?> <!-- If "yes", causes the references to be sorted in order of tags.
+                                 This doesn't have any effect unless symrefs is "yes" also. -->
+
+    <!-- These two save paper: Just setting compact to "yes" makes savings by not starting each 
+         main section on a new page but does not omit the blank lines between list items. 
+         If subcompact is also "yes" the blank lines between list items are also omitted. -->
+    <?rfc compact="yes" ?>
+    <?rfc subcompact="no" ?>
+    <!-- end of list of popular I-D processing instructions -->
+
+    <!-- ***** FRONT MATTER ***** -->
+
+<front>
+    <title abbrev="MPTCP Reset">Processing of Reset segments by
+    Multipath TCP</title>
+
+    <author initials="O." surname="Bonaventure" fullname="Olivier Bonaventure">
+      <organization>UCLouvain</organization>
+      <address>
+        <email>Olivier.Bonaventure@uclouvain.be</email>
+        <uri>http://inl.info.ucl.ac.be/</uri>
+      </address>
+    </author>
+
+    <date year="2014"/>
+    <area>Transport</area>
+    <workgroup>MPTCP</workgroup>
+    <keyword>MPTCP</keyword>
+
+    <abstract>
+      <t>
+        This document discusses how a Multipath TCP implementation
+	should generate and process RST segments. </t>
+    </abstract>
+
+    <note title="Editorial Note (To be removed by RFC Editor)">
+      <t>
+        Discussion of this draft takes place on the MPTCP working group mailing list
+        (multipathtcp@ietf.org), which is archived at <eref
+        target="http://www.ietf.org/mail-archive/web/multipathtcp/"/>.
+      </t>
+      <t>
+        Working Group information can be found at <eref
+        target="http://tools.ietf.org/wg/mptcp/"/>; 
+      </t>
+    </note>
+
+</front>
+<middle>
+
+<section anchor="introduction" title="Introduction">
+<t>
+   The Transmission Control Protocol (TCP) <xref target="rfc793"/> was
+   designed to provide a reliable data transfer between hosts attached
+   to a single IP address. Multipath TCP <xref target="rfc6824"/> is a
+   recent extension that enables a single TCP connection to use
+   multiple paths. For Multipath TCP, each path corresponds to a TCP
+   connection established between the communicating hosts. Each of
+   these connections is identified by the classical four-tuple (source
+   and destination IP addresses and source and destination port
+   numbers). Multipath TCP allows to group several of these TCP
+   connections, called subflows in <xref target="rfc6824"/> inside a
+   single Multipath TCP connection. It should be noted that the number of
+   subflows that are used for a given Multipath TCP connection is not
+   fixed and can change during the lifetime of a Multipath TCP
+   connection. 
+</t>
+<t>
+   In regular TCP, the RST flag is used to abruptly terminate a TCP
+   connection. When a host receives a valid TCP segment with the RST
+   flag, it immediately terminates the connection. This causes the
+   loss of all in-flight data that has not yet been acknowledged. In
+   the original TCP specification, a host could generate a segment
+   with the RST flag in the following cases: 
+</t>
+<t>
+  <list style="symbols">
+    <t>
+       A host receives a non-SYN segment that corresponds to a TCP
+       connection that does not exist (anymore). 
+    </t>
+    <t>
+       A host receives a SYN segment and does not want to establish
+       the requested connection for any reason. 
+    </t>
+    <t>
+      A host does not have enough resources anymore (e.g. memory) to 
+      support the established connection. 
+    </t>
+    <t>
+      The corresponding connection has been idle for a long time and
+      no answer has been received to the keepalive segments that the
+      host has sent over this TCP connection. 
+    </t>
+  </list>
+</t>
+<t>
+   Over the years, other reasons to use the RST flag have been added
+   to TCP implementations. The most important one is the possibility
+   for an application, typically a server, to abruptly terminate a TCP
+   connection by forcing the stack to send a segment with the RST flag
+   instead of waiting for the normal FIN exchange and being forced to
+   maintain state during $obo$.
+</t>
+<t>
+   Despite the fact that TCP is a transport protocol that is used only
+   on endhosts, various types of middleboxes are known to spoof TCP
+   segments that contain the RST flag to abruptly terminate TCP
+   connections $NDSS$. Some of these middleboxes terminate TCP connections to
+   block some applications such as P2P file transfers, others provide
+   security services such as DPI and terminate TCP connections once
+   they have identified suspicious data in the payload. This behavior
+   of middleboxes has been considered as harmful in <xref target="rfc3360"/>.
+</t>
+<t>
+   Multipath TCP cannot simply behave like regular TCP when
+   transmitting and receiving TCP segments with the RST flag. Since a
+   Multipath TCP connection is composed of several TCP subflows, the
+   transmission or reception of a TCP connection on a subflow only
+   terminates the corresponding subflow. This does not necessarily
+   terminate the Multipath TCP connection. 
+</t>
+<t>
+  This document is organized as follows. We discuss in section $ob$
+  the reasons why a Multipath TCP host could decide to transmit a RST
+  segment. In section $ob$, we propose a new Multipath TCP option that
+  can be used inside RST segments to convey additional information
+  about the reason for this RST segment and explain how a Multipath
+  TCP host should react to such segments.
+</t>
+
+<section title="Notational Conventions" anchor="notational-conventions">
+<t>
+  The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+  "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
+  interpreted as described in <xref target="rfc2119"/>.
+</t>
+</section>
+
+</section>
+
+<section title="Generation of RST segments" anchor="generation">
+<t>
+   This section documents the various reasons why a Multipath TCP host
+   could generate a segment with the RST flag. 
+</t>
+<section title="Lack of ressources" anchor="rst_ressources">
+<t>
+   A Multipath TCP implementation cannot usually support an unlimited
+   number of TCP subflows associated to a single Multipath TCP
+   connection. A Multipath TCP implementation may face a lack of
+   ressources when :
+</t>
+<t>
+  <list style="symbols">
+    <t>
+       It receives a SYN segment and accepting this subflow would 
+       exhaust the subflow table of the host. This error condition it
+       typically permanent.
+    </t>
+    <t>
+       It experiences memory pressure and needs to recover additional
+       ressources. Under these circumstances, it could decide to
+       terminate some subflows for some Multipath TCP
+       connections. This error condition is typically transient. 
+    </t>
+  </list>
+</t>
+</section>
+
+<section title="Administratively prohibited" anchor="rst_admin">
+<t>
+   A Multipath TCP implementation can be configured with policies that
+   determine which subflows can be associated to a given Multipath TCP
+   connection. These policies could be specified on a per application
+   basis, a per host basis or via other means that are outside the
+   scope of this document. Based on this configuration, a Multipath
+   TCP could generate a RST segment to refuse the establishment of a
+   subflow when : 
+</t>
+<t>
+  <list style="symbols">
+    <t>
+       It receives a SYN segment from a source address that conflicts
+       with its policies. For example, an enterprise server could be
+       configured to only accept subflows that originate from the
+       enterprise subnet and not from the global Internet. 
+       This error condition it typically permanent.
+    </t>
+    <t>
+       It receives a SYN segment destined to a destination address that conflicts 
+       with its policies. For example, a server may be configured to only expose 
+       some of its addresses to a subset of its clients. This error 
+       condition is typically permanent. 
+    </t>
+    <t>
+       It receives a SYN segment destined to a destination port that conflicts 
+       with its policies. For example, a web server may be configured
+       to only accept subflows targeted to port 80 even if the
+       Multipath TCP specification allows to group together subflows
+       on different destination ports. This error 
+       condition is typically permanent. 
+    </t>
+  </list>
+</t>
+</section>
+
+<section title="Too many already acknowledged data" anchor="rst_toomanydata">
+<t>
+   Multipath TCP allows data that was transmitted over one subflow to
+   be retransmitted over another subflow. This situation can happen
+   during a handover when a mobile host moves from one access network
+   to another. In this case, the same data can be transmitted twice
+   over different subflows. This is mandated by Multipath TCP to
+   ensure that any middlebox on the path of the first subflow will see
+   in-sequence segments. However, retransmitting already acknowledged
+   data over a subflow is not the best utilisation of the network
+   ressources as reported in $INFOCOM2014$. It should be possible for
+   a Multipath TCP host that has too many data that has already been
+   acknowledged over one subflow but still needs to be retransmitted
+   over another subflow to preserve the subflow ordering to terminate
+   the subflow with too many outstanding but already acknowledged
+   data. Measurements or simulations are required to evaluate the best
+   threshold to be used by a Multipath TCP implementation to decide
+   when to terminate such a subflow. In this document, we propose to
+   terminate a subflow once there are more than one initial congestion
+   window's worth of data that are outstanding on this subflow but
+   have already been acknowledged over another subflow. 
+</t>
+<t>
+  The situation described above is obviously transient. The
+  termination of such a subflow does not indicate that the path should
+  not be used anymore. Instead, the reception of a RST segment
+  indicating such a cause should trigger the reestablishment of a
+  subflow over this path. The host that sends such a RST segment could
+  also send a SYN segment at the same time. However, it should be
+  noted that there are situations such as a server sending the RST
+  segment to a client connected behind a NAT where only the host that
+  receives the RST segment is able to reestablish the subflow. When
+  the new subflow is established, data transfer starts at the data
+  sequence number that was reached on the other subflows and the
+  outstanding and unacknowledged data do not need to be retransmitted.
+</t>
+</section>
+
+<section title="Unacceptable performance" anchor="rst_badperformance">
+<t>
+  A Multipath TCP host can send data over several subflows. Some of
+  these subflows may perform well while the performance of others
+  could be affected by various performance problems :
+</t>
+<t>
+  <list style="symbols">
+    <t>
+      Excessive delay compared to the other subflows. If the receive
+      window used by Multipath TCP is too small, sending data over a
+      long delay subflow would reduce the overall performance of the
+      Multipath TCP connection. 
+    </t>
+    <t>
+       Excessive losses. The Multipath TCP congestion control scheme
+       tries to move traffic away from congested paths. If one of the
+       subflows is more heavily congested than the others, this can
+       severely impact the performance of the Multipath TCP
+       connection. 
+    </t>
+    <t>
+       Excessive reordering. Excessive reordering at the subflow level
+       may lower performance by making TCP's retransmission techniques
+       less reactive. 
+    </t>
+  </list>
+</t>
+<t>
+  A Multipath TCP host that detects that the performance of a
+  Multipath TCP connection is severely affected by one of the
+  underlying subflows, it could decide to terminate the offending
+  subflow. Depending on the number of remaining active subflows, it
+  may be needed to reestablish another subflow to replace the
+  terminated one.
+</t>
+</section>
+
+<section title="Lifetime expired" anchor="rst_lifetime">
+<t>
+  A Multipath TCP connection is composed of several subflows. However,
+  maintaining a large number of subflows can be costly from an
+  implementation viewpoint. A Multipath TCP host should monitor the
+  usage of the underlying subflows and could terminate one subflow
+  when  :
+</t>
+<t>
+  <list style="symbols">
+    <t>
+      The subflow has been active for more than a given configured
+      time. Some implementations might want to bound the lifetime of
+      subflows like web servers bound the lifetime of HTTP/1.1
+      sessions. 
+    </t>
+    <t>
+       No reply has been received to keepalive probes. The keepalive
+       probes <xref target="rfc1122"/> can be used over each subflow
+       to verify that their paths and the remote host are still
+       active. If no answer is received to these probes, the
+       corresponding subflow should be terminated. The Multipath TCP
+       connection could be terminated once the last subflow is
+       terminated. 
+    </t>
+  </list>
+</t>
+</section>
+
+</section>
+
+<section title="The MPTCP Reset option" anchor="mptcp_reset">
+  <t>
+   The Multipath TCP specification <xref target="rfc6824"/> defines
+   several Multipath TCP options. Each option is encoded by using the
+   Type-Length-Value format shown in the figure below.
+ </t>
+<figure>
+  <artwork type="option">
+                        1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +---------------+---------------+-------+-----------------------+
+   |     Kind      |    Length     |Subtype|                       |
+   +---------------+---------------+-------+                       |
+   |                     Subtype-specific data                     |
+   |                       (variable length)                       |
+   +---------------------------------------------------------------+
+
+</artwork>
+<postamble>
+   The Multipath TCP option format.
+</postamble>
+</figure>
+<t>
+   The proposed format for the Multipath TCP RST option is defined in
+   the figure below. 
+</t>
+<figure>
+  <artwork type="option">
+                      1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +---------------+---------------+-------+-----------------------+
+ |     Kind      |    Length     |Subtype|R a m| res.| Reason    |  
+ +---------------+---------------+-------+-----------------------+
+ |           Data ACK (4 or 8 octets, depending on flags)        |
+ +---------------------------------------------------------------+
+ |   Data sequence number (4 or 8 octets, depending on flags)    |
+ +---------------------------------------------------------------+
+ |              Subflow Sequence Number (4 octets)               |
+ +-------------------------------+-------------------------------+
+ |                  Sender's truncated HMAC (64 bits)            |
+ |                                                               |
+ +---------------------------------------------------------------+
+</artwork>
+<postamble>
+   The proposed Multipath TCP RST option format.
+</postamble>
+</figure>
+
+<t>
+   The Multipath TCP RST option contains a reason code that allows the
+   sender of the option to provide more information about the reason
+   for the termination of the subflow. <xref target="rfc793" /> allowed
+   the utilisation of the segment payload to provide additional
+   information about the reason for the termination of a TCP
+   connection and some middleboxes have used this facility
+   $NDSS$. However, without a precise format for the reason code, the
+   only thing that TCP implementations could do with this payload was
+   to log the received data. With a specific reason field, it becomes
+   possible for a Multipath TCP implementation to intelligently and
+   correctly react to the termination of a subflow. 
+</t>
+<t>
+  The Multipath TCP RST option also contains authentication
+  information. Given the importance of middleboxes in today's Internet
+  and knowing that some of them send spoofed RST segments, it is
+  important for a Multipath TCP host to distinguish between a RST
+  segment that was generated by the remote host and a RST segment that
+  was generated by a middlebox on the path.
+</t>
+<t>
+  To prevent replay attacks, authentication information should be
+  computed over fresh data that is sent by the remote host. In the
+  case of a RST segment, this is obviously not possible. To
+  authenticate the RSP segment and prevent the replay from one RST segment
+  to another subflow, the HMAC field contained the low order 64 bits
+  of the HMAC computed by using the sender's key over the entire MPTCP
+  RST option. The information contained in the MPTCP RST option is
+  essentially the same as the one present in the DSS option. In fact,
+  the MPTCP RST option can be considered as being equivalent to a zero
+  byte mapping. The subflow sequence number, Data ACK and Data
+  Sequence number must have the same value as if a mapping was sent
+  over this subflow. 
+</t>
+<t>
+  Like the DSS option, the MPTCP RST option has a variable length
+  depending on the utilization of 32 bits or 64 bits Data sequence
+  numbers and Data acknowledgements. The `a` and `m` flags have the
+  same role as in the DSS option.
+</t>
+<t>
+  The `R` flag is used by the sender to indicate whether it requests
+  the recipient of the RST segment to reestablish a subflow over the
+  same path upon reception of this RST segment. If set to 1, the
+  remote host should try to reestablish a subflow on the same path as
+  the terminated one. 
+</t>
+<t>
+  The `Reason` code is a 6 bits field that indicates the reason for
+  the termination of the subflow. The following codes are defined in
+  this document :
+</t>
+<t>
+  <list style="symbols">
+    <t>
+      Lack of ressources (code TBD). This code indicates that the
+      sending host does not have enough ressources to support the
+      terminated subflow. 
+    </t>
+    <t>
+       Administratively prohibited (code TBD). This code indicates
+       that the requested subflow is prohibited by the policies of
+       the sending host.
+    </t>
+    <t>
+       Too many already acknowledged data (code TBD). This code indicates 
+       that there are too many data that need to be transmitted over 
+       the terminated subflow while having already been acknowledged 
+       over one or more other subflows. 
+    </t>
+    <t>
+       Unacceptable performance (code TBD). This code indicates 
+       that the performance of this subflow was too low compared to 
+       the other subflows of this Multipath TCP connection. 
+    </t>
+    <t>
+       Lifetime expired (code TBD). This code indicates 
+       that the lifetime of the subflow has expired. 
+    </t>
+
+
+  </list>
+</t>
+
+</section>
+
+<section title="Processing the MPTCP RST option" anchor="rst_processing" >
+<t>
+   TODO
+</t>
+</section>
+
+
+<section title="IANA Considerations" anchor="iana-considerations" >
+<t>
+   <cref>To be provided.</cref>
+</t>
+</section>
+
+<section title="Security Considerations" anchor="security-considerations">
+<t>
+   <cref>To be provided.</cref>
+</t>
+</section>
+
+<section title="Conclusion" anchor="conclusion">
+<t>
+   To be written
+</t>
+</section>
+
+<section title="Acknowledgements" anchor="acknowledgements" >
+<t>
+  To be provided.
+</t>
+
+</section>
+
+</middle>
+  
+<back>
+
+<references title="Normative References">
+
+<reference anchor="RFC2119">
+  <front>
+    <title abbrev="RFC Key Words">Key words for use in RFCs to Indicate Requirement Levels</title>
+    <author initials="S." surname="Bradner" fullname="Scott Bradner">
+      <organization>Harvard University</organization>
+    </author>
+    <date year="1997" month="March"/>
+  </front>
+  <seriesInfo name="BCP" value="14"/>
+  <seriesInfo name="RFC" value="2119"/>
+</reference>
+
+
+
+</references>
+
+<references title="Informative References">
+
+<reference anchor="RFC2119">
+  <front>
+    <title abbrev="RFC Key Words">Key words for use in RFCs to Indicate Requirement Levels</title>
+    <author initials="S." surname="Bradner" fullname="Scott Bradner">
+      <organization>Harvard University</organization>
+    </author>
+    <date year="1997" month="March"/>
+  </front>
+  <seriesInfo name="BCP" value="14"/>
+  <seriesInfo name="RFC" value="2119"/>
+</reference>
+
+
+</references>
+
+
+
+  </back>
+
+</rfc>
