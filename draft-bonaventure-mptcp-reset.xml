@@ -31,7 +31,11 @@
   "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6824.xml">
   <!ENTITY RFC1122 SYSTEM
   "http://xml.resource.org/public/rfc/bibxml/reference.RFC.1122.xml">
-  <!ENTITY RFC3360 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3360.xml">
+  <!ENTITY RFC3360 SYSTEM
+"http://xml.resource.org/public/rfc/bibxml/reference.RFC.3360.xml">
+  <!ENTITY RFC5961 SYSTEM
+"http://xml.resource.org/public/rfc/bibxml/reference.RFC.5961.xml">
+ <!ENTITY RFC6528 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6528.xml">
 ]>
 
 <rfc
@@ -90,6 +94,21 @@
       </address>
     </author>
 
+    <author initials="C." surname="Paasch" fullname="Christoph Paasch">
+      <organization>UCLouvain</organization>
+      <address>
+        <email>Christoph.Paasch@uclouvain.be</email>
+        <uri>http://inl.info.ucl.ac.be/</uri>
+      </address>
+    </author>
+
+    <author initials="G." surname="Detal" fullname="Gregory Detal">
+      <organization>UCLouvain</organization>
+      <address>
+        <email>Gregory.Detal@uclouvain.be</email>
+        <uri>http://inl.info.ucl.ac.be/</uri>
+      </address>
+    </author>
     <date year="2014"/>
     <area>Transport</area>
     <workgroup>MPTCP</workgroup>
@@ -152,14 +171,19 @@
        the requested connection for any reason. 
     </t>
     <t>
-      A host does not have enough resources anymore (e.g. memory) to 
-      support the established connection. 
+       A host has tried to retransmit the same data too many times
+       without having received an acknowledgment. 
     </t>
     <t>
       The corresponding connection has been idle for a long time and
       no answer has been received to the keepalive segments that the
-      host has sent over this TCP connection. 
+      host has sent over this TCP connection  <xref target="RFC1122"/>
     </t>
+    <t>
+      A host does not have enough resources anymore (e.g. memory) to 
+      support the established connection. 
+    </t>
+
   </list>
 </t>
 <t>
@@ -168,13 +192,13 @@
    for an application, typically a server, to abruptly terminate a TCP
    connection by forcing the stack to send a segment with the RST flag
    instead of waiting for the normal FIN exchange and being forced to
-   maintain state during $obo$.
+   maintain state.
 </t>
 <t>
    Despite the fact that TCP is a transport protocol that is used only
    on endhosts, various types of middleboxes are known to spoof TCP
    segments that contain the RST flag to abruptly terminate TCP
-   connections $NDSS$. Some of these middleboxes terminate TCP connections to
+   connections . Some of these middleboxes terminate TCP connections to
    block some applications such as P2P file transfers, others provide
    security services such as DPI and terminate TCP connections once
    they have identified suspicious data in the payload. This behavior
@@ -189,9 +213,9 @@
    terminate the Multipath TCP connection. 
 </t>
 <t>
-  This document is organized as follows. We discuss in section $ob$
-  the reasons why a Multipath TCP host could decide to transmit a RST
-  segment. In section $ob$, we propose a new Multipath TCP option that
+  This document is organized as follows. We discuss in section <xref
+  target="generation" />  the reasons why a Multipath TCP host could decide to transmit a RST
+  segment. In section <xref target="mptcp_reset" />, we propose a new Multipath TCP option that
   can be used inside RST segments to convey additional information
   about the reason for this RST segment and explain how a Multipath
   TCP host should react to such segments.
@@ -253,7 +277,7 @@
        with its policies. For example, an enterprise server could be
        configured to only accept subflows that originate from the
        enterprise subnet and not from the global Internet. 
-       This error condition it typically permanent.
+       This error condition is typically permanent.
     </t>
     <t>
        It receives a SYN segment destined to a destination address that conflicts 
@@ -271,6 +295,14 @@
     </t>
   </list>
 </t>
+
+<t>Both ICMPv4 and ICMPv6 contain error code that can be used to
+indicate similar error conditions. However, ICMP messages are more
+likely to be dropped by network equipment than TCP segments. 
+Multipath TCP's reaction to these ICMP messages and the TCP RST segments should be similar. 
+
+</t>
+
 </section>
 
 <section title="Too many already acknowledged data" anchor="rst_toomanydata">
@@ -293,7 +325,8 @@
    when to terminate such a subflow. In this document, we propose to
    terminate a subflow once there are more than one initial congestion
    window's worth of data that are outstanding on this subflow but
-   have already been acknowledged over another subflow. 
+   have already been acknowledged over another subflow or there is no
+   other data on this subflow. 
 </t>
 <t>
   The situation described above is obviously transient. The
@@ -304,10 +337,7 @@
   also send a SYN segment at the same time. However, it should be
   noted that there are situations such as a server sending the RST
   segment to a client connected behind a NAT where only the host that
-  receives the RST segment is able to reestablish the subflow. When
-  the new subflow is established, data transfer starts at the data
-  sequence number that was reached on the other subflows and the
-  outstanding and unacknowledged data do not need to be retransmitted.
+  receives the RST segment is able to reestablish the subflow. 
 </t>
 </section>
 
@@ -323,19 +353,19 @@
       Excessive delay compared to the other subflows. If the receive
       window used by Multipath TCP is too small, sending data over a
       long delay subflow would reduce the overall performance of the
-      Multipath TCP connection. 
+      Multipath TCP connection. This error condition is typically transient. 
     </t>
     <t>
        Excessive losses. The Multipath TCP congestion control scheme
        tries to move traffic away from congested paths. If one of the
        subflows is more heavily congested than the others, this can
        severely impact the performance of the Multipath TCP
-       connection. 
+       connection. This error condition is typically transient. 
     </t>
     <t>
        Excessive reordering. Excessive reordering at the subflow level
        may lower performance by making TCP's retransmission techniques
-       less reactive. 
+       less reactive. This error condition is typically transient. 
     </t>
   </list>
 </t>
@@ -360,25 +390,110 @@
 <t>
   <list style="symbols">
     <t>
-      The subflow has been active for more than a given configured
-      time. Some implementations might want to bound the lifetime of
-      subflows like web servers bound the lifetime of HTTP/1.1
-      sessions. 
-    </t>
-    <t>
        No reply has been received to keepalive probes. The keepalive
        probes <xref target="RFC1122"/> can be used over each subflow
        to verify that their paths and the remote host are still
        active. If no answer is received to these probes, the
        corresponding subflow should be terminated. The Multipath TCP
        connection could be terminated once the last subflow is
-       terminated. 
+       terminated. Note that sending a regular RST over each subflow
+       will only terminate the subflow but not the Multipath TCP connection.
     </t>
   </list>
 </t>
 </section>
 
+<section title="Removed address" anchor="rst_rmaddr">
+
+<t>When a host receives a REMOVE_ADDR option, it should send a TCP
+keepalive over each of the subflows using the removed address. If a
+response to the keepalive is received, the subflow should not be
+terminated. Otherwise, the lack of response to the keepalives will
+trigger a termination of the subflow as explained in section <xref target="rst_lifetime"/>.
+</t>
+<t>
+When a host sends a REMOVE_ADDR option, it SHOULD send a RST segment
+over each of the subflows that were using the removed address.
+</t>
+
 </section>
+
+
+<section title="Middlebox interference has been detected" anchor="rst_middlebox">
+
+<t>
+  As explained in <xref target="RFC6824"/>, Multipath TCP includes
+  several mechanisms to detect and possibly cope with middlebox
+  interference. There are unfortunately cases where Multipath TCP
+  needs to terminate a subflow once it has detected middlebox
+  interference. The following cases are listed in <xref target="RFC6824"/> : 
+</t>
+<t>
+ <list style="symbols">
+   <t>
+     As explained on page 42 of <xref target="RFC6824"/>, a host MUST
+     close a subflow with a RST if the first ACK that it receives over
+     this subflow does not contain the DSS option.
+   </t>
+   <t>
+     As explained on page 43 of <xref target="RFC6824"/> a host MUST
+     close a subflow by sending a RST segment with the MP_FAIL option
+     if it receives a segment with an invalid DSS checksum. The
+     MP_FAIL option includes the data sequence number of the first
+     byte of the payload of the affected segment.
+   </t>
+ </list>
+</t>
+
+</section>
+
+<section title="Multipath TCP specific errors" anchor="rst_mptcp">
+
+<t>
+  <xref target="RFC6824"/> lists several error conditions that are
+  specific to Multipath TCP and may lead to the termination of a
+  subflow by transmitting a RST segment. These error conditions are : 
+</t>
+<t>
+ <list style="symbols">
+   <t>A SYN segment with the MP_JOIN option was received with an 
+   invalid HMAC or an unknown token. In this case, the host may reply with a RST or 
+   silently ignore the error (<xref target="RFC6824" /> pages 22, 23
+   and 45). 
+   </t>
+   <t>A TCP segment is received without a DSS checksum on a Multipath
+   TCP connection where the usage of the checksum has been negotiated 
+   (<xref target="RFC6824" /> page 24). 
+   </t>
+   <t>
+   No DSS mapping has been received within a window of data (<xref
+   target="RFC6824"/> page 27).     
+   </t>
+  </list>
+</t>
+</section>
+
+<section title="Fast Close" anchor="rst_fastclose">
+<t>
+The MP_FASTCLOSE option is defined in <xref target="RFC6824"/> allows
+to quickly terminate a Multipath TCP connection. This operation is
+described in section 3.5 of <xref target="RFC6824"/>.
+</t>
+
+</section>
+
+<section title="Unspecified TCP error" anchor="rst_error">
+<t>
+A TCP implementation may send a RST segment for reasons that are
+unrelated to Multipath TCP. 
+
+</t>
+
+</section>
+
+</section>
+
+
 
 <section title="The MPTCP Reset option" anchor="mptcp_reset">
   <t>
@@ -411,17 +526,15 @@
                       1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  +---------------+---------------+-------+-----------------------+
- |     Kind      |    Length     |Subtype|R a m| res.| Reason    |  
+ |     Kind      |    Length     |Subtype|a m 0 T|    Reason     |  
  +---------------+---------------+-------+-----------------------+
  |           Data ACK (4 or 8 octets, depending on flags)        |
  +---------------------------------------------------------------+
  |   Data sequence number (4 or 8 octets, depending on flags)    |
  +---------------------------------------------------------------+
  |              Subflow Sequence Number (4 octets)               |
- +-------------------------------+-------------------------------+
- |                  Sender's truncated HMAC (64 bits)            |
- |                                                               |
  +---------------------------------------------------------------+
+
 </artwork>
 <postamble>
    The proposed Multipath TCP RST option format.
@@ -442,26 +555,9 @@
    correctly react to the termination of a subflow. 
 </t>
 <t>
-  The Multipath TCP RST option also contains authentication
-  information. Given the importance of middleboxes in today's Internet
-  and knowing that some of them send spoofed RST segments, it is
-  important for a Multipath TCP host to distinguish between a RST
-  segment that was generated by the remote host and a RST segment that
-  was generated by a middlebox on the path.
-</t>
-<t>
-  To prevent replay attacks, authentication information should be
-  computed over fresh data that is sent by the remote host. In the
-  case of a RST segment, this is obviously not possible. To
-  authenticate the RSP segment and prevent the replay from one RST segment
-  to another subflow, the HMAC field contained the low order 64 bits
-  of the HMAC computed by using the sender's key over the entire MPTCP
-  RST option. The information contained in the MPTCP RST option is
-  essentially the same as the one present in the DSS option. In fact,
-  the MPTCP RST option can be considered as being equivalent to a zero
-  byte mapping. The subflow sequence number, Data ACK and Data
-  Sequence number must have the same value as if a mapping was sent
-  over this subflow. 
+  The Multipath TCP RST option also contains sequence number and
+  acknolwedgement information to enable the receiving host to verify
+  the validity of the RST segment. 
 </t>
 <t>
   Like the DSS option, the MPTCP RST option has a variable length
@@ -470,14 +566,17 @@
   same role as in the DSS option.
 </t>
 <t>
-  The `R` flag is used by the sender to indicate whether it requests
-  the recipient of the RST segment to reestablish a subflow over the
-  same path upon reception of this RST segment. If set to 1, the
-  remote host should try to reestablish a subflow on the same path as
-  the terminated one. 
+  The `T` flag is used by the sender to indicate whether the error
+  condition that is reported is Transient (T bit set to 1) or
+  Permanent (T bit set to 0). If the error condition is considered to
+  be Transient by the sender of the RST segment, the recipient of this
+  segment MAY try to reestablish a subflow over the failed path. If
+  the error condition is considered to be permanent, the receiver of
+  the RST segment SHOULD not try to reestablish a subflow over this
+  path. 
 </t>
 <t>
-  The `Reason` code is a 6 bits field that indicates the reason for
+  The `Reason` code is an 8 bits field that indicates the reason for
   the termination of the subflow. The following codes are defined in
   this document :
 </t>
@@ -486,29 +585,51 @@
     <t>
       Lack of ressources (code TBD). This code indicates that the
       sending host does not have enough ressources to support the
-      terminated subflow. 
+      terminated subflow. This error condition is usually transient.
     </t>
     <t>
        Administratively prohibited (code TBD). This code indicates
        that the requested subflow is prohibited by the policies of
-       the sending host.
+       the sending host. This error condition is usually permanent.
     </t>
     <t>
        Too many already acknowledged data (code TBD). This code indicates 
        that there are too many data that need to be transmitted over 
        the terminated subflow while having already been acknowledged 
-       over one or more other subflows. 
+       over one or more other subflows. This error condition is 
+       usually transient.
     </t>
     <t>
        Unacceptable performance (code TBD). This code indicates 
        that the performance of this subflow was too low compared to 
-       the other subflows of this Multipath TCP connection. 
+       the other subflows of this Multipath TCP connection. This error condition is 
+       usually transient.
     </t>
     <t>
        Lifetime expired (code TBD). This code indicates 
-       that the lifetime of the subflow has expired. 
+       that the lifetime of the subflow has expired. This error condition is 
+       usually transient.
     </t>
-
+    <t>Removed address (code TBD). This code indicates that the
+    address associated to this subflow has been removed by the
+    sender. This error condition is usually permanent.
+    </t>
+    <t>Middlebox interference (code TBD). Middlebox interference has
+    been detected over this subflow. This error condition is permanent.
+    </t>
+    <t>
+      Multipath TCP specific error (code TBD). An error has been
+      detected in the processing of Multipath TCP options. This error
+      is usually permanent.
+    </t>
+    <t>Fast Close (code TBD). This RST segment has been sent in
+    response to a segment with the MP_FASTCLOSE option. This error
+    condition is permanent since the Multipath TCP connection is being closed.
+    </t>
+    <t>Unspecified TCP error (code TBD). An unspecified TCP error has
+    been detected on the affected subflow. This error condition can be
+    transient or permanent.
+    </t>
 
   </list>
 </t>
@@ -531,6 +652,7 @@
 <section title="Security Considerations" anchor="security-considerations">
 <t>
    <cref>To be provided.</cref>
+Discuss <xref target="RFC5961"/> ? and <xref target="RFC6528"/>
 </t>
 </section>
 
@@ -542,7 +664,7 @@
 
 <section title="Acknowledgements" anchor="acknowledgements" >
 <t>
-  To be provided.
+  This work was partially supported by the FP7 Trilogy2 project.
 </t>
 
 </section>
@@ -569,7 +691,8 @@
  &RFC6824;
  &RFC3360;
  &RFC1122;
-
+ &RFC5961;
+ &RFC6528;
 
 </references>
 
