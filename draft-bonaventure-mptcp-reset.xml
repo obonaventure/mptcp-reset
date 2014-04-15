@@ -583,50 +583,50 @@ unrelated to Multipath TCP.
 <t>
   <list style="symbols">
     <t>
-      Lack of ressources (code TBD). This code indicates that the
+      Lack of ressources (code TBD1). This code indicates that the
       sending host does not have enough ressources to support the
       terminated subflow. This error condition is usually transient.
     </t>
     <t>
-       Administratively prohibited (code TBD). This code indicates
+       Administratively prohibited (code TBD2). This code indicates
        that the requested subflow is prohibited by the policies of
        the sending host. This error condition is usually permanent.
     </t>
     <t>
-       Too many already acknowledged data (code TBD). This code indicates 
+       Too many already acknowledged data (code TBD3). This code indicates 
        that there are too many data that need to be transmitted over 
        the terminated subflow while having already been acknowledged 
        over one or more other subflows. This error condition is 
        usually transient.
     </t>
     <t>
-       Unacceptable performance (code TBD). This code indicates 
+       Unacceptable performance (code TBD4). This code indicates 
        that the performance of this subflow was too low compared to 
        the other subflows of this Multipath TCP connection. This error condition is 
        usually transient.
     </t>
     <t>
-       Lifetime expired (code TBD). This code indicates 
+       Lifetime expired (code TBD5). This code indicates 
        that the lifetime of the subflow has expired. This error condition is 
        usually transient.
     </t>
-    <t>Removed address (code TBD). This code indicates that the
+    <t>Removed address (code TBD6). This code indicates that the
     address associated to this subflow has been removed by the
     sender. This error condition is usually permanent.
     </t>
-    <t>Middlebox interference (code TBD). Middlebox interference has
+    <t>Middlebox interference (code TBD7). Middlebox interference has
     been detected over this subflow. This error condition is permanent.
     </t>
     <t>
-      Multipath TCP specific error (code TBD). An error has been
+      Multipath TCP specific error (code TBD8). An error has been
       detected in the processing of Multipath TCP options. This error
       is usually permanent.
     </t>
-    <t>Fast Close (code TBD). This RST segment has been sent in
+    <t>Fast Close (code TBD9). This RST segment has been sent in
     response to a segment with the MP_FASTCLOSE option. This error
     condition is permanent since the Multipath TCP connection is being closed.
     </t>
-    <t>Unspecified TCP error (code TBD). An unspecified TCP error has
+    <t>Unspecified TCP error (code TBD10). An unspecified TCP error has
     been detected on the affected subflow. This error condition can be
     transient or permanent.
     </t>
@@ -638,15 +638,64 @@ unrelated to Multipath TCP.
 
 <section title="Processing the MPTCP RST option" anchor="rst_processing" >
 <t>
-   TODO
+   The MPTCP RST option defined in this document can only appear in
+   segments having the RST bit set. If a host receives the MPTCP RST
+   option in a non-RST option, it MUST silently discard the received
+   segment and ignore its content.
 </t>
+<t>
+   When receiving a RST segment containing the MPTCP RST option, a
+   host MUST first verify the validity of the segment by checking that :
+</t>
+<t>
+  <list>
+    <t> the 
+  </list>
+
+</t>
+
+
 </section>
 
 
 <section title="IANA Considerations" anchor="iana-considerations" >
 <t>
-   <cref>To be provided.</cref>
+   This document request the allocation of a new MPTCP option sub-type
+   from IANA. Furthermore, it defines a set of error conditions that
+   can be encoded inside the MPTCP RST option. This list of error
+   conditions should be maintained by IANA.
 </t>
+
+<texttable anchor="table_iana" title="Suggested MPTCP RST codepoints">
+    <ttcol align='center'>Codepoint #</ttcol>
+    <ttcol align='center'>Reason</ttcol>
+    <c> TBD1</c>
+    <l>Lack of ressources</l>
+    <c> TBD2</c>
+    <l>Administratively prohibited</l>
+    <c> TBD3</c>
+    <l>Too many unacknowledged data</l>
+    <c> TBD4</c>
+    <l>Unacceptable performance</l>
+    <c> TBD5</c>
+    <l>Lifetime expired</l>
+    <c> TBD6</c>
+    <l>Removed address</l>
+    <c> TBD7</c>
+    <l>Middlebox interference detected</l>
+    <c> TBD8</c>
+    <l>Multipath TCP specific error</l>
+    <c> TBD9</c>
+    <l>Response to Fast Close</l>
+    <c>TBD10</c>
+    <l>Unspecified TCP error</l>
+    <postamble>Suggested codepoints for the MPTCP RST option</postamble>
+</texttable>
+
+<t>
+
+</t>
+
 </section>
 
 <section title="Security Considerations" anchor="security-considerations">
